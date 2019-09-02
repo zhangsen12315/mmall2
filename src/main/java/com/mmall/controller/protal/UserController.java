@@ -79,7 +79,6 @@ public class UserController {
         if (StringUtils.isEmpty(cookie)){
             return ServerResponse.createByErrorMessage("cookie为空用户未登录,无法获取当前用户的信息");
         }
-        System.out.println(cookie);
         String redisValue = RedisPoolUtil.get(cookie);
         User user = JsonUtil.string2Obj(redisValue, User.class);
         if(user != null){
@@ -110,37 +109,47 @@ public class UserController {
 
     @RequestMapping(value = "reset_password.do",method=RequestMethod.POST)
     @ResponseBody
-    public ServerResponse<String> resetPssword(String passwordOld,String passwordNew,HttpSession session){
-        User user = (User)session.getAttribute(Const.CURRENT_USER);
-        if (user == null){
-            return ServerResponse.createByErrorMessage("用户未登录!");
+    public ServerResponse<String> resetPssword(String passwordOld,String passwordNew,HttpServletRequest httpServletRequest,HttpSession session){
+//        User user = (User)session.getAttribute(Const.CURRENT_USER);
+        String cookie = CookieUtil.readLoginCookie(httpServletRequest);
+        if (StringUtils.isEmpty(cookie)){
+            return ServerResponse.createByErrorMessage("cookie为空用户未登录,无法获取当前用户的信息");
         }
+        String redisValue = RedisPoolUtil.get(cookie);
+        User user = JsonUtil.string2Obj(redisValue, User.class);
         return iUserService.resetPassword(passwordOld,passwordNew,user);
     }
 
     @RequestMapping(value = "update_information.do",method=RequestMethod.POST)
     @ResponseBody
-    public ServerResponse<User> updateInformation(HttpSession session,User user){
-        User currentUser = (User)session.getAttribute(Const.CURRENT_USER);
-        if (currentUser == null){
-            return ServerResponse.createByErrorMessage("用户未登录!");
+    public ServerResponse<User> updateInformation(HttpServletRequest httpServletRequest,User user){
+//        User currentUser = (User)session.getAttribute(Const.CURRENT_USER);
+        String cookie = CookieUtil.readLoginCookie(httpServletRequest);
+        if (StringUtils.isEmpty(cookie)){
+            return ServerResponse.createByErrorMessage("cookie为空用户未登录,无法获取当前用户的信息");
         }
+        String redisValue = RedisPoolUtil.get(cookie);
+        User currentUser = JsonUtil.string2Obj(redisValue, User.class);
         user.setId(currentUser.getId());
         user.setUsername(currentUser.getUsername());
         ServerResponse<User> serverResponse = iUserService.updateInformation(user);
         if (serverResponse.isSuccess()){
-            session.setAttribute(Const.CURRENT_USER,serverResponse.getData());
+//            session.setAttribute(Const.CURRENT_USER,serverResponse.getData());
+            RedisPoolUtil.setEx(cookie, JsonUtil.obj2String(serverResponse.getData()),Const.RedisCacheExtime.REDIS_SESSION_EXTIME);
         }
         return serverResponse;
     }
 
     @RequestMapping(value = "get_information.do",method=RequestMethod.POST)
     @ResponseBody
-    public ServerResponse<User> getUserInfoById(HttpSession session){
-        User currentUser = (User)session.getAttribute(Const.CURRENT_USER);
-        if (currentUser == null){
-            return ServerResponse.createByErrorMessage("用户未登录!");
+    public ServerResponse<User> getUserInfoById(HttpSession session,HttpServletRequest httpServletRequest){
+//        User currentUser = (User)session.getAttribute(Const.CURRENT_USER);
+        String cookie = CookieUtil.readLoginCookie(httpServletRequest);
+        if (StringUtils.isEmpty(cookie)){
+            return ServerResponse.createByErrorMessage("cookie为空用户未登录,无法获取当前用户的信息");
         }
+        String redisValue = RedisPoolUtil.get(cookie);
+        User currentUser = JsonUtil.string2Obj(redisValue, User.class);
         ServerResponse serverResponse = iUserService.findUserInfoById(currentUser.getId());
         return serverResponse;
     }

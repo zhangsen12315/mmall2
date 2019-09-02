@@ -6,6 +6,10 @@ import com.mmall.common.ServerResponse;
 import com.mmall.pojo.User;
 import com.mmall.service.CategoryService;
 import com.mmall.service.IUserService;
+import com.mmall.util.CookieUtil;
+import com.mmall.util.JsonUtil;
+import com.mmall.util.RedisPoolUtil;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 @Controller
 @RequestMapping("/manage/category")
@@ -26,12 +31,15 @@ public class CategoryManageController {
 
     @RequestMapping(value = "add_category.do",method = RequestMethod.GET)
     @ResponseBody
-    public ServerResponse addCategory(HttpSession session, String categoryName, @RequestParam(value = "parentId",defaultValue = "0")Integer parentId){
+    public ServerResponse addCategory(HttpSession session, String categoryName, HttpServletRequest httpServletRequest, @RequestParam(value = "parentId",defaultValue = "0")Integer parentId){
 
-        User user = (User)session.getAttribute(Const.CURRENT_USER);
-        if (user == null){
-            return ServerResponse.createByErrorCodeMessage(ResponseCode.NEED_LOGIN.getCode(),ResponseCode.NEED_LOGIN.getDesc());
+//        User user = (User)session.getAttribute(Const.CURRENT_USER);
+        String cookie = CookieUtil.readLoginCookie(httpServletRequest);
+        if (StringUtils.isEmpty(cookie)){
+            return ServerResponse.createByErrorMessage("cookie为空用户未登录,无法获取当前用户的信息");
         }
+        String redisValue = RedisPoolUtil.get(cookie);
+        User user = JsonUtil.string2Obj(redisValue, User.class);
         //校验一下是不是管理员登录
         ServerResponse response = iUserService.checkRoleIsAdmin(user);
         if (response.isSuccess()){
@@ -43,11 +51,14 @@ public class CategoryManageController {
 
     @RequestMapping("set_category_name.do")
     @ResponseBody
-    public ServerResponse setCategoryName(HttpSession session,String categoryName,int categoryId){
-        User user = (User)session.getAttribute(Const.CURRENT_USER);
-        if (user == null){
-            return ServerResponse.createByErrorCodeMessage(ResponseCode.NEED_LOGIN.getCode(),ResponseCode.NEED_LOGIN.getDesc());
+    public ServerResponse setCategoryName(HttpSession session,String categoryName,HttpServletRequest httpServletRequest,int categoryId){
+//        User user = (User)session.getAttribute(Const.CURRENT_USER);
+        String cookie = CookieUtil.readLoginCookie(httpServletRequest);
+        if (StringUtils.isEmpty(cookie)){
+            return ServerResponse.createByErrorMessage("cookie为空用户未登录,无法获取当前用户的信息");
         }
+        String redisValue = RedisPoolUtil.get(cookie);
+        User user = JsonUtil.string2Obj(redisValue, User.class);
         //校验一下是不是管理员登录
         ServerResponse response = iUserService.checkRoleIsAdmin(user);
         if (response.isSuccess()){
@@ -60,11 +71,14 @@ public class CategoryManageController {
 
     @RequestMapping(value = "get_category.do",method = RequestMethod.GET)
     @ResponseBody
-    public ServerResponse getChildrenParallelCategory(HttpSession session,@RequestParam(value = "categoryId" ,defaultValue = "0")Integer categoryId){
-        User user = (User)session.getAttribute(Const.CURRENT_USER);
-        if (user == null){
-            return ServerResponse.createByErrorCodeMessage(ResponseCode.NEED_LOGIN.getCode(),ResponseCode.NEED_LOGIN.getDesc());
+    public ServerResponse getChildrenParallelCategory(HttpSession session,HttpServletRequest httpServletRequest,@RequestParam(value = "categoryId" ,defaultValue = "0")Integer categoryId){
+//        User user = (User)session.getAttribute(Const.CURRENT_USER);
+        String cookie = CookieUtil.readLoginCookie(httpServletRequest);
+        if (StringUtils.isEmpty(cookie)){
+            return ServerResponse.createByErrorMessage("cookie为空用户未登录,无法获取当前用户的信息");
         }
+        String redisValue = RedisPoolUtil.get(cookie);
+        User user = JsonUtil.string2Obj(redisValue, User.class);
         ServerResponse response = iUserService.checkRoleIsAdmin(user);
         if (response.isSuccess()){
             //更新categoryname
@@ -77,11 +91,14 @@ public class CategoryManageController {
 
     @RequestMapping("get_deep_category.do")
     @ResponseBody
-    public ServerResponse getCategoryAndDeepChildrenCategory(HttpSession session,@RequestParam(value = "categoryId" ,defaultValue = "0") Integer categoryId){
-        User user = (User)session.getAttribute(Const.CURRENT_USER);
-        if(user == null){
-            return ServerResponse.createByErrorCodeMessage(ResponseCode.NEED_LOGIN.getCode(),"用户未登录,请登录");
+    public ServerResponse getCategoryAndDeepChildrenCategory(HttpSession session,HttpServletRequest httpServletRequest,@RequestParam(value = "categoryId" ,defaultValue = "0") Integer categoryId){
+//        User user = (User)session.getAttribute(Const.CURRENT_USER);
+        String cookie = CookieUtil.readLoginCookie(httpServletRequest);
+        if (StringUtils.isEmpty(cookie)){
+            return ServerResponse.createByErrorMessage("cookie为空用户未登录,无法获取当前用户的信息");
         }
+        String redisValue = RedisPoolUtil.get(cookie);
+        User user = JsonUtil.string2Obj(redisValue, User.class);
         if(iUserService.checkRoleIsAdmin(user).isSuccess()){
             //查询当前节点的id和递归子节点的id
             //0->10000->100000
